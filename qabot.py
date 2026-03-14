@@ -21,7 +21,7 @@ warnings.filterwarnings('ignore')
 
 ## LLM
 def get_llm():
-    model_id = 'ibm/granite-3-2-8b-instruct'
+    model_id = 'ibm/granite-3-3-8b-instruct'
     
     parameters = {
         "temperature": 0.5,
@@ -41,7 +41,7 @@ def get_llm():
 
     ## Document loader
 def document_loader(file):
-    loader = PyPDFLoader(file.name)
+    loader = PyPDFLoader(file)
     loaded_document = loader.load()
     return loaded_document
 
@@ -82,8 +82,27 @@ def retriever(file):
     splits = document_loader(file)
     chunks = text_splitter(splits)
     vectordb = vector_database(chunks)
-    retriever = vectordb.as_retriever()
-    return retriever
+    retriever_obj = vectordb.as_retriever()
+    return retriever_obj
+
+
+def retriever_qa(file, query):
+    try:
+        llm = get_llm()
+        retriever_obj = retriever(file)
+
+        qa = RetrievalQA.from_chain_type(
+            llm=llm,
+            chain_type="stuff",
+            retriever=retriever_obj,
+            return_source_documents=True
+        )
+
+        response = qa.invoke(query)
+        return response["result"]
+
+    except Exception as e:
+        return str(e)
 
 ## QA Chain
 def retriever_qa(file, query):
